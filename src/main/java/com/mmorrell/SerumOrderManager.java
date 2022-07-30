@@ -293,7 +293,7 @@ public class SerumOrderManager {
 
         log.info(
                 String.format(
-                        "$%.3f / $%.3f [%.1f/%.1f], %d",
+                        "$%.1f / $%.1f [%.4f/%.4f], %d",
                         bestBidPrice,
                         bestAskPrice,
                         bestBid.getFloatQuantity(),
