@@ -48,7 +48,7 @@ public class SerumOrderManager {
     // finals
     private final PublicKey srmUsdcOoa = PublicKey.valueOf("G2VagULnBacMoQ3Umc12ut9fs5kGGyYr92LwUUbvhhe7");
     private final PublicKey srmUsdtOoa = PublicKey.valueOf("7nwSNT96eeVoTMA3f1tPDjtcrgqHLduESorpmU3qWXbv");
-    private final PublicKey btcUsdcOoa = PublicKey.valueOf("25yy9PDA77TKxcxbA7gm8kCQwCKezTy632LkFgDc45WL");
+    private final PublicKey btcUsdcOoa = PublicKey.valueOf("6Z8SyNqPfCm1PwwpiQD2SDqAQgJX2HVdHPDVHVBFfEbm");
     private final PublicKey btcUsdtOoa = PublicKey.valueOf("J1wVoXZXuwCU4fR2MnksSTirwuFmBSmKMkacv1aVov2w");
 
     // wallets
@@ -147,16 +147,16 @@ public class SerumOrderManager {
         float bestBidPrice = bestBid.getFloatPrice();
         float bestAskPrice = bestAsk.getFloatPrice();
 
-        log.info(
-                String.format(
-                        "$%.3f / $%.3f [%.1f/%.1f], %d",
-                        bestBidPrice,
-                        bestAskPrice,
-                        bestBid.getFloatQuantity(),
-                        bestAsk.getFloatQuantity(),
-                        System.currentTimeMillis()
-                )
-        );
+//        log.info(
+//                String.format(
+//                        "$%.3f / $%.3f [%.1f/%.1f], %d",
+//                        bestBidPrice,
+//                        bestAskPrice,
+//                        bestBid.getFloatQuantity(),
+//                        bestAsk.getFloatQuantity(),
+//                        System.currentTimeMillis()
+//                )
+//        );
 
         if (bestBidPrice > bestAskPrice) {
             log.info("!!!! ARB DETECTED !!!!");
@@ -291,16 +291,16 @@ public class SerumOrderManager {
         float bestBidPrice = bestBid.getFloatPrice();
         float bestAskPrice = bestAsk.getFloatPrice();
 
-        log.info(
-                String.format(
-                        "$%.1f / $%.1f [%.4f/%.4f], %d",
-                        bestBidPrice,
-                        bestAskPrice,
-                        bestBid.getFloatQuantity(),
-                        bestAsk.getFloatQuantity(),
-                        System.currentTimeMillis()
-                )
-        );
+//        log.info(
+//                String.format(
+//                        "$%.1f / $%.1f [%.4f/%.4f], %d",
+//                        bestBidPrice,
+//                        bestAskPrice,
+//                        bestBid.getFloatQuantity(),
+//                        bestAsk.getFloatQuantity(),
+//                        System.currentTimeMillis()
+//                )
+//        );
 
         if (bestBidPrice > bestAskPrice) {
             log.info("!!!! ARB DETECTED !!!!");
