@@ -4,7 +4,7 @@ import org.junit.Test;
 
 public class AppTest {
 
-    @Test
+    // @Test
     public void mainTest() {
         System.out.println("BLAH");
     }

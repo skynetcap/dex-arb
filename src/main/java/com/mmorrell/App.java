@@ -9,15 +9,11 @@ import java.util.concurrent.Executors;
 public class App {
     public static void main(String[] args) {
 
-        ExecutorService executor = Executors.newCachedThreadPool();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
 
         // create order manager (pkey, rpcclient)
         SerumOrderManager orderManager = new SerumOrderManager();
-
-        // configure strategy parameters
         orderManager.setSolAmount(0.5);
-
-        // executorservice, start runnable containing loop'
         executor.submit(() -> {
             while (true) {
                 orderManager.executeArb();
@@ -25,6 +21,6 @@ public class App {
             }
         });
 
-        System.out.println("Serum arb bot started.");
+        log.info("Serum arb bot started.");
     }
 }
