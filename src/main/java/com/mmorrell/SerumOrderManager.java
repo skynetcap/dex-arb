@@ -75,6 +75,8 @@ public class SerumOrderManager {
     // Sell on SRM/USDC
     // Convert USDC to USDT
     // TODO - cache recent block hash in second thread
+    // todo - add flash loans
+    // todo - add saber
     public void executeArb() {
         // SRM/USDT asks
         AccountInfo obAccount = null;
@@ -211,7 +213,7 @@ public class SerumOrderManager {
             transaction.addInstruction(
                     MemoProgram.writeUtf8(
                             account.getPublicKey(),
-                            "So, scumbag. We gotcha."
+                            "My chest hurt Gary, with the Cereal Milk oil."
                     )
             );
 
