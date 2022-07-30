@@ -68,14 +68,14 @@ public class SerumOrderManager {
         AccountInfo askAccount = null;
         try {
             askAccount = client.getApi().getAccountInfo(
-                    solUsdcMarket.getAsks(),
-                    Map.of("commitment", "processed")
+                    solUsdcMarket.getAsks()
             );
         } catch (RpcException e) {
             log.error("Unable to get ask account.");
         }
 
         if (askAccount == null) {
+            log.error("null ask account.");
             return;
         }
 
@@ -83,8 +83,14 @@ public class SerumOrderManager {
                 askAccount.getValue().getData().get(0)
         );
 
-        OrderBook bidOrderBook = OrderBook.readOrderBook(askData);
-        Order bestBid = bidOrderBook.getBestBid();
+        OrderBook askOrderBook = OrderBook.readOrderBook(askData);
+        askOrderBook.setBaseLotSize(solUsdcMarket.getBaseLotSize());
+        askOrderBook.setQuoteLotSize(solUsdcMarket.getQuoteLotSize());
+        askOrderBook.setBaseDecimals(solUsdcMarket.getBaseDecimals());
+        askOrderBook.setQuoteDecimals(solUsdcMarket.getQuoteDecimals());
+
+        Order bestAsk = askOrderBook.getBestAsk();
+        log.info("Best ask: " + bestAsk.toString() + ", " + askAccount.getContext().getSlot());
 
         //log.info(Arrays.toString(bidOrderBook.getOrders().toArray()));
 
