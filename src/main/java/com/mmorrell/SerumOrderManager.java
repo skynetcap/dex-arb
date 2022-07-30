@@ -74,6 +74,7 @@ public class SerumOrderManager {
     // Buy on SRM/USDT
     // Sell on SRM/USDC
     // Convert USDC to USDT
+    // TODO - cache recent block hash in second thread
     public void executeArb() {
         // SRM/USDT asks
         AccountInfo obAccount = null;
@@ -144,8 +145,7 @@ public class SerumOrderManager {
         if (bestBidPrice > bestAskPrice) {
             log.info("!!!! ARB DETECTED !!!!");
             log.info("Best Bid: " + bestBid);
-            log.info("Best Ask: " + bestBid);
-            log.info("Executing transaction.");
+            log.info("Best Ask: " + bestAsk);
             final Transaction transaction = new Transaction();
 
             long buyOrderId = 11133711L;
@@ -179,12 +179,10 @@ public class SerumOrderManager {
             );
 
             transaction.addInstruction(
-                    SerumProgram.consumeEvents(
-                            account.getPublicKey(),
-                            List.of(
-                                    srmUsdtOoa
-                            ),
+                    SerumProgram.settleFunds(
                             srmUsdtMarket,
+                            srmUsdtOoa,
+                            account.getPublicKey(),
                             srmWallet,
                             usdtWallet
                     )
@@ -201,12 +199,10 @@ public class SerumOrderManager {
             );
 
             transaction.addInstruction(
-                    SerumProgram.consumeEvents(
-                            account.getPublicKey(),
-                            List.of(
-                                    srmUsdcOoa
-                            ),
+                    SerumProgram.settleFunds(
                             srmUsdcMarket,
+                            srmUsdcOoa,
+                            account.getPublicKey(),
                             srmWallet,
                             usdcWallet
                     )
