@@ -191,7 +191,7 @@ public class SerumOrderManager {
             transaction.addInstruction(
                     SerumProgram.placeOrder(
                             account,
-                            usdcWallet,
+                            srmWallet,
                             srmUsdcOoa,
                             srmUsdcMarket,
                             sellOrder
