@@ -62,25 +62,23 @@ public class SerumOrderManager {
     }
 
     public void executeArb() {
-        // get sol/usdc asks
-        log.info("Getting SOL/USDC asks.");
-
-        AccountInfo askAccount = null;
+        // SOL/USDC asks
+        AccountInfo obAccount = null;
         try {
-            askAccount = client.getApi().getAccountInfo(
+            obAccount = client.getApi().getAccountInfo(
                     solUsdcMarket.getAsks()
             );
         } catch (RpcException e) {
             log.error("Unable to get ask account.");
         }
 
-        if (askAccount == null) {
+        if (obAccount == null) {
             log.error("null ask account.");
             return;
         }
 
         byte[] askData = Base64.getDecoder().decode(
-                askAccount.getValue().getData().get(0)
+                obAccount.getValue().getData().get(0)
         );
 
         OrderBook askOrderBook = OrderBook.readOrderBook(askData);
@@ -90,9 +88,49 @@ public class SerumOrderManager {
         askOrderBook.setQuoteDecimals(solUsdcMarket.getQuoteDecimals());
 
         Order bestAsk = askOrderBook.getBestAsk();
-        log.info("Best ask: " + bestAsk.toString() + ", " + askAccount.getContext().getSlot());
+//        log.info("Best ask (SOL/USDC): " + String.format("%.2f SOL @ $%.2f", bestAsk.getFloatQuantity(),
+//                bestAsk.getFloatPrice()) +
+//                ", " + obAccount.getContext().getSlot());
 
-        //log.info(Arrays.toString(bidOrderBook.getOrders().toArray()));
+        // SOL/USDT bids
+        try {
+            obAccount = client.getApi().getAccountInfo(
+                    solUsdtMarket.getBids()
+            );
+        } catch (RpcException e) {
+            log.error("Unable to get bid account.");
+        }
+
+        if (obAccount == null) {
+            log.error("null bid account.");
+            return;
+        }
+
+        byte[] bidData = Base64.getDecoder().decode(
+                obAccount.getValue().getData().get(0)
+        );
+
+        OrderBook bidOrderBook = OrderBook.readOrderBook(bidData);
+        bidOrderBook.setBaseLotSize(solUsdtMarket.getBaseLotSize());
+        bidOrderBook.setQuoteLotSize(solUsdtMarket.getQuoteLotSize());
+        bidOrderBook.setBaseDecimals(solUsdtMarket.getBaseDecimals());
+        bidOrderBook.setQuoteDecimals(solUsdtMarket.getQuoteDecimals());
+        Order bestBid = bidOrderBook.getBestBid();
+
+        log.info(
+                String.format(
+                        "$%.2f / $%.2f [%.2f/%.2f]",
+                        bestBid.getFloatPrice(),
+                        bestAsk.getFloatPrice(),
+                        bestBid.getFloatQuantity(),
+                        bestAsk.getFloatQuantity()
+                )
+        );
+
+//        log.info("Best bid (SOL/USDT): " + String.format("%.2f SOL @ $%.2f", bestBid.getFloatQuantity(),
+//                bestBid.getFloatPrice()) +
+//                ", " + obAccount.getContext().getSlot());
+
 
 
         // get sol/usdt bids
