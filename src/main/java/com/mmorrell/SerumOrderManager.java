@@ -29,6 +29,14 @@ public class SerumOrderManager {
     private final Account account;
     private float srmAmount;
 
+    // btc/usdc
+    private final PublicKey btcUsdcMarketPubkey = PublicKey.valueOf("A8YFbxQYFVqKZaoYJLLUVcQiWP7G2MeEgW5wsAQgMvFw");
+    private final Market btcUsdcMarket;
+
+    //btc/usdt
+    private final PublicKey btcUsdtMarketPubkey = PublicKey.valueOf("C1EuT9VokAKLiW7i2ASnZUvxDoKuKkCpDDeNxAptuNe4");
+    private final Market btcUsdtMarket;
+
     // sol/usdc
     private final PublicKey srmUsdcMarketPubkey = PublicKey.valueOf("ByRys5tuUWDgL73G8JBAEfkdFf8JWBzPBDHsBVQ5vbQA");
     private final Market srmUsdcMarket;
@@ -40,9 +48,13 @@ public class SerumOrderManager {
     // finals
     private final PublicKey srmUsdcOoa = PublicKey.valueOf("G2VagULnBacMoQ3Umc12ut9fs5kGGyYr92LwUUbvhhe7");
     private final PublicKey srmUsdtOoa = PublicKey.valueOf("7nwSNT96eeVoTMA3f1tPDjtcrgqHLduESorpmU3qWXbv");
+    private final PublicKey btcUsdcOoa = PublicKey.valueOf("25yy9PDA77TKxcxbA7gm8kCQwCKezTy632LkFgDc45WL");
+    private final PublicKey btcUsdtOoa = PublicKey.valueOf("J1wVoXZXuwCU4fR2MnksSTirwuFmBSmKMkacv1aVov2w");
 
-    private final PublicKey usdcWallet = PublicKey.valueOf("4oKFPF8pAELch6P1owmTgk8C5oweVEMjN6qbS1YZKHZu");
+    // wallets
+    private final PublicKey btcWallet = PublicKey.valueOf("25yy9PDA77TKxcxbA7gm8kCQwCKezTy632LkFgDc45WL");
     private final PublicKey srmWallet = PublicKey.valueOf("3Kdg8eX62TMLN74jgndMHDkipXC7QrXcqxiWhwnPEvBq");
+    private final PublicKey usdcWallet = PublicKey.valueOf("4oKFPF8pAELch6P1owmTgk8C5oweVEMjN6qbS1YZKHZu");
     private final PublicKey usdtWallet = PublicKey.valueOf("AdREyCYJXzJEdz5oFgPLMTj4cBmFcoMEsva5diaeUUaH");
 
     public SerumOrderManager() {
@@ -66,6 +78,19 @@ public class SerumOrderManager {
                 .setRetrieveOrderBooks(true)
                 .build();
         log.info("Loaded market (SRM/USDT): " + srmUsdtMarket.getOwnAddress().toBase58());
+
+        this.btcUsdcMarket = new MarketBuilder()
+                .setClient(client)
+                .setPublicKey(btcUsdcMarketPubkey)
+                .setRetrieveOrderBooks(true)
+                .build();
+        log.info("Loaded market (BTC/USDC): " + btcUsdcMarket.getOwnAddress().toBase58());
+        this.btcUsdtMarket = new MarketBuilder()
+                .setClient(client)
+                .setPublicKey(btcUsdtMarketPubkey)
+                .setRetrieveOrderBooks(true)
+                .build();
+        log.info("Loaded market (BTC/USDT): " + btcUsdtMarket.getOwnAddress().toBase58());
 
         this.serumManager = new SerumManager(client);
     }
@@ -219,6 +244,152 @@ public class SerumOrderManager {
             // CONVERT USDC BACK INTO USDT
             // let's test this first.
         }
+
+    }
+
+    // usdt > btc
+    // btc > usdc
+    // todo: usdc > usdt
+    public void executeArb2() {
+        Map<PublicKey, Optional<AccountInfo.Value>> obData;
+
+        try {
+            obData = client.getApi().getMultipleAccountsMapProcessed(
+                    List.of(
+                            btcUsdtMarket.getAsks(),
+                            btcUsdcMarket.getBids()
+                    )
+            );
+        } catch (RpcException e) {
+            throw new RuntimeException(e);
+        }
+        // BTC/USDT asks
+        byte[] askData = Base64.getDecoder().decode(
+                obData.get(btcUsdtMarket.getAsks()).get().getData().get(0)
+        );
+
+        OrderBook askOrderBook = OrderBook.readOrderBook(askData);
+        askOrderBook.setBaseLotSize(btcUsdtMarket.getBaseLotSize());
+        askOrderBook.setQuoteLotSize(btcUsdtMarket.getQuoteLotSize());
+        askOrderBook.setBaseDecimals(btcUsdtMarket.getBaseDecimals());
+        askOrderBook.setQuoteDecimals(btcUsdtMarket.getQuoteDecimals());
+
+        Order bestAsk = askOrderBook.getBestAsk();
+
+        // BTC/USDC bids
+        byte[] bidData = Base64.getDecoder().decode(
+                obData.get(btcUsdcMarket.getBids()).get().getData().get(0)
+        );
+
+        OrderBook bidOrderBook = OrderBook.readOrderBook(bidData);
+        bidOrderBook.setBaseLotSize(btcUsdcMarket.getBaseLotSize());
+        bidOrderBook.setQuoteLotSize(btcUsdcMarket.getQuoteLotSize());
+        bidOrderBook.setBaseDecimals(btcUsdcMarket.getBaseDecimals());
+        bidOrderBook.setQuoteDecimals(btcUsdcMarket.getQuoteDecimals());
+        Order bestBid = bidOrderBook.getBestBid();
+
+        float bestBidPrice = bestBid.getFloatPrice();
+        float bestAskPrice = bestAsk.getFloatPrice();
+
+        log.info(
+                String.format(
+                        "$%.3f / $%.3f [%.1f/%.1f], %d",
+                        bestBidPrice,
+                        bestAskPrice,
+                        bestBid.getFloatQuantity(),
+                        bestAsk.getFloatQuantity(),
+                        System.currentTimeMillis()
+                )
+        );
+
+        if (bestBidPrice > bestAskPrice) {
+            log.info("!!!! ARB DETECTED !!!!");
+            log.info("Best Bid: " + bestBid);
+            log.info("Best Ask: " + bestAsk);
+            final Transaction transaction = new Transaction();
+
+            float maxBtcAmount = 0.002f;
+            float amount = Math.min(maxBtcAmount, Math.min(bestBid.getFloatQuantity(), bestAsk.getFloatQuantity()));
+
+            long buyOrderId = 11133711L;
+            final Order buyOrder = Order.builder()
+                    .floatPrice(bestAskPrice)
+                    .floatQuantity(amount)
+                    .clientOrderId(buyOrderId)
+                    .orderTypeLayout(OrderTypeLayout.IOC)
+                    .selfTradeBehaviorLayout(SelfTradeBehaviorLayout.DECREMENT_TAKE)
+                    .buy(true).build();
+            serumManager.setOrderPrices(buyOrder, btcUsdtMarket);
+
+            long sellOrderId = 1142011L;
+            final Order sellOrder = Order.builder()
+                    .floatPrice(bestBidPrice)
+                    .floatQuantity(amount)
+                    .clientOrderId(sellOrderId)
+                    .orderTypeLayout(OrderTypeLayout.IOC)
+                    .selfTradeBehaviorLayout(SelfTradeBehaviorLayout.DECREMENT_TAKE)
+                    .buy(false).build();
+            serumManager.setOrderPrices(sellOrder, btcUsdcMarket);
+
+            transaction.addInstruction(
+                    SerumProgram.placeOrder(
+                            account,
+                            usdtWallet,
+                            btcUsdtOoa,
+                            btcUsdtMarket,
+                            buyOrder
+                    )
+            );
+
+            transaction.addInstruction(
+                    SerumProgram.settleFunds(
+                            btcUsdtMarket,
+                            btcUsdtOoa,
+                            account.getPublicKey(),
+                            btcWallet,
+                            usdtWallet
+                    )
+            );
+
+            transaction.addInstruction(
+                    SerumProgram.placeOrder(
+                            account,
+                            btcWallet,
+                            btcUsdcOoa,
+                            btcUsdcMarket,
+                            sellOrder
+                    )
+            );
+
+            transaction.addInstruction(
+                    SerumProgram.settleFunds(
+                            btcUsdcMarket,
+                            btcUsdcOoa,
+                            account.getPublicKey(),
+                            btcWallet,
+                            usdcWallet
+                    )
+            );
+
+            transaction.addInstruction(
+                    MemoProgram.writeUtf8(
+                            account.getPublicKey(),
+                            "My chest hurt Gary, with the Cereal Milk oil."
+                    )
+            );
+
+            log.info("Sending TX.");
+
+            try {
+                log.info("TX: " + client.getApi().sendTransaction(transaction, account));
+            } catch (RpcException ex) {
+                log.error(ex.getMessage());
+            }
+
+            // CONVERT USDC BACK INTO USDT
+            // let's test this first.
+        }
+
 
     }
 }

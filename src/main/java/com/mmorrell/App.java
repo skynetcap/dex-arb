@@ -9,14 +9,22 @@ import java.util.concurrent.Executors;
 public class App {
     public static void main(String[] args) {
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
 
         // create order manager (pkey, rpcclient)
         SerumOrderManager orderManager = new SerumOrderManager();
         orderManager.setSrmAmount(50f);
         executor.submit(() -> {
             while (true) {
+                // srm strat
                 orderManager.executeArb();
+                Thread.sleep(400L);
+            }
+        });
+        executor.submit(() -> {
+            while (true) {
+                // btc start
+                orderManager.executeArb2();
                 Thread.sleep(400L);
             }
         });
