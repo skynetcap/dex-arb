@@ -104,7 +104,7 @@ public class SerumOrderManager {
 
         // SOL/USDC bids
         try {
-            obAccount = client.getApi().getAccountInfo(
+            obAccount = client.getApi().getAccountInfoProcessed(
                     srmUsdcMarket.getBids()
             );
         } catch (RpcException e) {
