@@ -13,7 +13,7 @@ public class App {
 
         // create order manager (pkey, rpcclient)
         SerumOrderManager orderManager = new SerumOrderManager();
-        orderManager.setSolAmount(0.5);
+        orderManager.setSrmAmount(50f);
         executor.submit(() -> {
             while (true) {
                 orderManager.executeArb();
