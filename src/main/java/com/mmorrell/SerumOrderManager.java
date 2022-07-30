@@ -143,6 +143,8 @@ public class SerumOrderManager {
 
         if (bestBidPrice > bestAskPrice) {
             log.info("!!!! ARB DETECTED !!!!");
+            log.info("Best Bid: " + bestBid);
+            log.info("Best Ask: " + bestBid);
             log.info("Executing transaction.");
             final Transaction transaction = new Transaction();
 
