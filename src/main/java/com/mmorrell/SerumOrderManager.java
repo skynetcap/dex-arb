@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.p2p.solanaj.core.Account;
 import org.p2p.solanaj.core.PublicKey;
 import org.p2p.solanaj.core.Transaction;
+import org.p2p.solanaj.programs.MemoProgram;
 import org.p2p.solanaj.rpc.RpcClient;
 import org.p2p.solanaj.rpc.RpcException;
 import org.p2p.solanaj.rpc.types.AccountInfo;
@@ -77,7 +78,7 @@ public class SerumOrderManager {
         // SRM/USDT asks
         AccountInfo obAccount = null;
         try {
-            obAccount = client.getApi().getAccountInfo(
+            obAccount = client.getApi().getAccountInfoProcessed(
                     srmUsdtMarket.getAsks()
             );
         } catch (RpcException e) {
@@ -131,7 +132,7 @@ public class SerumOrderManager {
 
         log.info(
                 String.format(
-                        "$%.2f / $%.2f [%.2f/%.2f], %d",
+                        "$%.4f / $%.4f [%.2f/%.2f], %d",
                         bestBidPrice,
                         bestAskPrice,
                         bestBid.getFloatQuantity(),
@@ -208,6 +209,21 @@ public class SerumOrderManager {
                             usdcWallet
                     )
             );
+
+            transaction.addInstruction(
+                    MemoProgram.writeUtf8(
+                            account.getPublicKey(),
+                            "Liquidity by openserum.io"
+                    )
+            );
+
+            log.info("Sending TX.");
+
+            try {
+                log.info("TX: " + client.getApi().sendTransaction(transaction, account));
+            } catch (RpcException ex) {
+                log.error(ex.getMessage());
+            }
 
             // CONVERT USDC BACK INTO USDT
             // let's test this first.
