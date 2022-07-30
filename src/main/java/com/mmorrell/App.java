@@ -17,7 +17,7 @@ public class App {
         executor.submit(() -> {
             while (true) {
                 orderManager.executeArb();
-                Thread.sleep(500L);
+                Thread.sleep(400L);
             }
         });
 

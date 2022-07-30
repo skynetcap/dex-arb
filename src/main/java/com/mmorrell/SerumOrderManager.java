@@ -11,12 +11,15 @@ import org.p2p.solanaj.programs.MemoProgram;
 import org.p2p.solanaj.rpc.RpcClient;
 import org.p2p.solanaj.rpc.RpcException;
 import org.p2p.solanaj.rpc.types.AccountInfo;
+import org.p2p.solanaj.rpc.types.config.Commitment;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 public class SerumOrderManager {
@@ -77,24 +80,23 @@ public class SerumOrderManager {
     // TODO - cache recent block hash in second thread
     // todo - add flash loans
     // todo - add saber
+    // todo - use getmultipleaccount
     public void executeArb() {
-        // SRM/USDT asks
-        AccountInfo obAccount = null;
+        Map<PublicKey, Optional<AccountInfo.Value>> obData;
+
         try {
-            obAccount = client.getApi().getAccountInfoProcessed(
-                    srmUsdtMarket.getAsks()
+            obData = client.getApi().getMultipleAccountsMapProcessed(
+                    List.of(
+                            srmUsdtMarket.getAsks(),
+                            srmUsdcMarket.getBids()
+                    )
             );
         } catch (RpcException e) {
-            log.error("Unable to get ask account.");
+            throw new RuntimeException(e);
         }
-
-        if (obAccount == null) {
-            log.error("null ask account.");
-            return;
-        }
-
+        // SRM/USDT asks
         byte[] askData = Base64.getDecoder().decode(
-                obAccount.getValue().getData().get(0)
+                obData.get(srmUsdtMarket.getAsks()).get().getData().get(0)
         );
 
         OrderBook askOrderBook = OrderBook.readOrderBook(askData);
@@ -106,21 +108,8 @@ public class SerumOrderManager {
         Order bestAsk = askOrderBook.getBestAsk();
 
         // SOL/USDC bids
-        try {
-            obAccount = client.getApi().getAccountInfoProcessed(
-                    srmUsdcMarket.getBids()
-            );
-        } catch (RpcException e) {
-            log.error("Unable to get bid account.");
-        }
-
-        if (obAccount == null) {
-            log.error("null bid account.");
-            return;
-        }
-
         byte[] bidData = Base64.getDecoder().decode(
-                obAccount.getValue().getData().get(0)
+                obData.get(srmUsdcMarket.getBids()).get().getData().get(0)
         );
 
         OrderBook bidOrderBook = OrderBook.readOrderBook(bidData);
@@ -135,12 +124,12 @@ public class SerumOrderManager {
 
         log.info(
                 String.format(
-                        "$%.4f / $%.4f [%.2f/%.2f], %d",
+                        "$%.3f / $%.3f [%.1f/%.1f], %d",
                         bestBidPrice,
                         bestAskPrice,
                         bestBid.getFloatQuantity(),
                         bestAsk.getFloatQuantity(),
-                        obAccount.getContext().getSlot()
+                        System.currentTimeMillis()
                 )
         );
 
@@ -150,10 +139,12 @@ public class SerumOrderManager {
             log.info("Best Ask: " + bestAsk);
             final Transaction transaction = new Transaction();
 
+            float amount = Math.min(srmAmount, Math.min(bestBid.getFloatQuantity(), bestAsk.getFloatQuantity()));
+
             long buyOrderId = 11133711L;
             final Order buyOrder = Order.builder()
                     .floatPrice(bestAskPrice)
-                    .floatQuantity(srmAmount)
+                    .floatQuantity(amount)
                     .clientOrderId(buyOrderId)
                     .orderTypeLayout(OrderTypeLayout.IOC)
                     .selfTradeBehaviorLayout(SelfTradeBehaviorLayout.DECREMENT_TAKE)
@@ -163,7 +154,7 @@ public class SerumOrderManager {
             long sellOrderId = 1142011L;
             final Order sellOrder = Order.builder()
                     .floatPrice(bestBidPrice)
-                    .floatQuantity(srmAmount)
+                    .floatQuantity(amount)
                     .clientOrderId(sellOrderId)
                     .orderTypeLayout(OrderTypeLayout.IOC)
                     .selfTradeBehaviorLayout(SelfTradeBehaviorLayout.DECREMENT_TAKE)
