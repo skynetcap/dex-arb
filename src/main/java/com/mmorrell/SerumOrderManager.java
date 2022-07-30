@@ -211,7 +211,7 @@ public class SerumOrderManager {
             transaction.addInstruction(
                     MemoProgram.writeUtf8(
                             account.getPublicKey(),
-                            "Liquidity by openserum.io"
+                            "So, scumbag. We gotcha."
                     )
             );
 
