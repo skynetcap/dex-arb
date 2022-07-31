@@ -145,7 +145,7 @@ public class SerumOrderManager {
         Order bestBid = bidOrderBook.getBestBid();
 
         float bestBidPrice = bestBid.getFloatPrice();
-        float bestAskPrice = bestAsk.getFloatPrice();
+        float bestAskPrice = bestAsk.getFloatPrice() * 1.00001f; // multiplier for quote threshold?
 
 //        log.info(
 //                String.format(
