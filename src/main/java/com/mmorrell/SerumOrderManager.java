@@ -1,8 +1,7 @@
 package com.mmorrell;
 
-import ch.openserum.serum.manager.SerumManager;
-import ch.openserum.serum.model.*;
-import ch.openserum.serum.program.SerumProgram;
+import com.mmorrell.serum.model.*;
+import com.mmorrell.serum.program.SerumProgram;
 import lombok.extern.slf4j.Slf4j;
 import org.p2p.solanaj.core.Account;
 import org.p2p.solanaj.core.PublicKey;
@@ -104,7 +103,7 @@ public class SerumOrderManager {
         Map<PublicKey, Optional<AccountInfo.Value>> obData;
 
         try {
-            obData = client.getApi().getMultipleAccountsMapProcessed(
+            obData = client.getApi().getMultipleAccountsMap(
                     List.of(
                             srmUsdtMarket.getAsks(),
                             srmUsdcMarket.getBids()
@@ -261,7 +260,7 @@ public class SerumOrderManager {
         Map<PublicKey, Optional<AccountInfo.Value>> obData;
 
         try {
-            obData = client.getApi().getMultipleAccountsMapProcessed(
+            obData = client.getApi().getMultipleAccountsMap(
                     List.of(
                             btcUsdtMarket.getAsks(),
                             btcUsdcMarket.getBids()
