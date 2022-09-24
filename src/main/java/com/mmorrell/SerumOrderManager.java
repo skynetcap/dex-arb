@@ -11,7 +11,6 @@ import org.p2p.solanaj.programs.MemoProgram;
 import org.p2p.solanaj.rpc.RpcClient;
 import org.p2p.solanaj.rpc.RpcException;
 import org.p2p.solanaj.rpc.types.AccountInfo;
-import org.p2p.solanaj.rpc.types.config.Commitment;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,9 +27,7 @@ public class SerumOrderManager {
 
 
     private final RpcClient client;
-    private final SerumManager serumManager;
     private final Account account;
-    private float srmAmount;
 
     // btc/usdc
     private final PublicKey btcUsdcMarketPubkey = PublicKey.valueOf("A8YFbxQYFVqKZaoYJLLUVcQiWP7G2MeEgW5wsAQgMvFw");
@@ -94,12 +91,6 @@ public class SerumOrderManager {
                 .setRetrieveOrderBooks(true)
                 .build();
         log.info("Loaded market (BTC/USDT): " + btcUsdtMarket.getOwnAddress().toBase58());
-
-        this.serumManager = new SerumManager(client);
-    }
-
-    public void setSrmAmount(float srmAmount) {
-        this.srmAmount = srmAmount;
     }
 
     // Buy on SRM/USDT
