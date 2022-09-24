@@ -16,13 +16,16 @@ import org.p2p.solanaj.rpc.types.config.Commitment;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 public class SerumOrderManager {
+
+    private Deque<Long> strat1Prices = new ArrayDeque<>(200);
+    private Deque<Long> strat1PricesAsk = new ArrayDeque<>(200);
+    private Deque<Long> strat2Prices = new ArrayDeque<>(200);
+    private Deque<Long> strat2PricesAsk = new ArrayDeque<>(200);
+
 
     private final RpcClient client;
     private final SerumManager serumManager;
@@ -144,9 +147,16 @@ public class SerumOrderManager {
         bidOrderBook.setQuoteDecimals(srmUsdcMarket.getQuoteDecimals());
         Order bestBid = bidOrderBook.getBestBid();
 
-        float bestBidPrice = bestBid.getFloatPrice();
-        float bestAskPrice = bestAsk.getFloatPrice() * 1.00001f; // multiplier for quote threshold?
-
+        long bestBidPrice = bestBid.getPrice();
+        strat1Prices.addLast(bestBidPrice);
+        if (strat1Prices.size() == 200) {
+            strat1Prices.pop();
+        }
+        long bestAskPrice = bestAsk.getPrice(); // multiplier for quote threshold?
+        strat1PricesAsk.addLast(bestAskPrice);
+        if (strat1PricesAsk.size() == 200) {
+            strat1PricesAsk.pop();
+        }
 //        log.info(
 //                String.format(
 //                        "$%.3f / $%.3f [%.1f/%.1f], %d",
@@ -164,27 +174,25 @@ public class SerumOrderManager {
             log.info("Best Ask: " + bestAsk);
             final Transaction transaction = new Transaction();
 
-            float amount = Math.min(srmAmount, Math.min(bestBid.getFloatQuantity(), bestAsk.getFloatQuantity()));
+            long amount = Math.min(335, Math.min(bestBid.getQuantity(), bestAsk.getQuantity()));
 
             long buyOrderId = 11133711L;
             final Order buyOrder = Order.builder()
-                    .floatPrice(bestAskPrice)
-                    .floatQuantity(amount)
+                    .price(bestAskPrice)
+                    .quantity(amount)
                     .clientOrderId(buyOrderId)
                     .orderTypeLayout(OrderTypeLayout.IOC)
                     .selfTradeBehaviorLayout(SelfTradeBehaviorLayout.DECREMENT_TAKE)
                     .buy(true).build();
-            serumManager.setOrderPrices(buyOrder, srmUsdtMarket);
 
             long sellOrderId = 1142011L;
             final Order sellOrder = Order.builder()
-                    .floatPrice(bestBidPrice)
-                    .floatQuantity(amount)
+                    .price(bestBidPrice)
+                    .quantity(amount)
                     .clientOrderId(sellOrderId)
                     .orderTypeLayout(OrderTypeLayout.IOC)
                     .selfTradeBehaviorLayout(SelfTradeBehaviorLayout.DECREMENT_TAKE)
                     .buy(false).build();
-            serumManager.setOrderPrices(sellOrder, srmUsdcMarket);
 
             transaction.addInstruction(
                     SerumProgram.placeOrder(
@@ -243,6 +251,14 @@ public class SerumOrderManager {
 
             // CONVERT USDC BACK INTO USDT
             // let's test this first.
+
+            System.out.println("CSV:");
+            System.out.println("index,bestBid,bestAsk");
+            for (int i = 0; i < strat1Prices.size(); i++) {
+                float bestBid2 = strat1Prices.pop();
+                float bestAsk2 = strat1PricesAsk.pop();
+                System.out.printf("%d,%.2f,%2f%n", i, bestBid2, bestAsk2);
+            }
         }
 
     }
@@ -288,8 +304,18 @@ public class SerumOrderManager {
         bidOrderBook.setQuoteDecimals(btcUsdcMarket.getQuoteDecimals());
         Order bestBid = bidOrderBook.getBestBid();
 
-        float bestBidPrice = bestBid.getFloatPrice();
-        float bestAskPrice = bestAsk.getFloatPrice();
+        long bestBidPrice = bestBid.getPrice();
+        long bestAskPrice = bestAsk.getPrice();
+
+        strat2Prices.addLast(bestBidPrice);
+        if (strat2Prices.size() == 200) {
+            strat2Prices.pop();
+        }
+
+        strat2PricesAsk.addLast(bestAskPrice);
+        if (strat2PricesAsk.size() == 200) {
+            strat2PricesAsk.pop();
+        }
 
 //        log.info(
 //                String.format(
@@ -308,28 +334,26 @@ public class SerumOrderManager {
             log.info("Best Ask: " + bestAsk);
             final Transaction transaction = new Transaction();
 
-            float maxBtcAmount = 0.002f;
-            float amount = Math.min(maxBtcAmount, Math.min(bestBid.getFloatQuantity(), bestAsk.getFloatQuantity()));
+            long maxBtcAmount = 20; // 0.002f
+            long amount = Math.min(maxBtcAmount, Math.min(bestBid.getQuantity(), bestAsk.getQuantity()));
 
             long buyOrderId = 11133711L;
             final Order buyOrder = Order.builder()
-                    .floatPrice(bestAskPrice)
-                    .floatQuantity(amount)
+                    .price(bestAskPrice)
+                    .quantity(amount)
                     .clientOrderId(buyOrderId)
                     .orderTypeLayout(OrderTypeLayout.IOC)
                     .selfTradeBehaviorLayout(SelfTradeBehaviorLayout.DECREMENT_TAKE)
                     .buy(true).build();
-            serumManager.setOrderPrices(buyOrder, btcUsdtMarket);
 
             long sellOrderId = 1142011L;
             final Order sellOrder = Order.builder()
-                    .floatPrice(bestBidPrice)
-                    .floatQuantity(amount)
+                    .price(bestBidPrice)
+                    .quantity(amount)
                     .clientOrderId(sellOrderId)
                     .orderTypeLayout(OrderTypeLayout.IOC)
                     .selfTradeBehaviorLayout(SelfTradeBehaviorLayout.DECREMENT_TAKE)
                     .buy(false).build();
-            serumManager.setOrderPrices(sellOrder, btcUsdcMarket);
 
             transaction.addInstruction(
                     SerumProgram.placeOrder(
@@ -388,6 +412,14 @@ public class SerumOrderManager {
 
             // CONVERT USDC BACK INTO USDT
             // let's test this first.
+
+            System.out.println("CSV:");
+            System.out.println("index,bestBid,bestAsk");
+            for (int i = 0; i < strat2Prices.size(); i++) {
+                float bestBid2 = strat2Prices.pop();
+                float bestAsk2 = strat2PricesAsk.pop();
+                System.out.printf("%d,%.2f,%2f%n", i, bestBid2, bestAsk2);
+            }
         }
 
 
