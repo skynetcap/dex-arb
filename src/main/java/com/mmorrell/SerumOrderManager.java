@@ -68,7 +68,7 @@ public class SerumOrderManager {
             throw new RuntimeException(e);
         }
 
-        this.client = new RpcClient("https://node.openserum.io/");
+        this.client = new RpcClient("https://solana-api.projectserum.com/");
         this.srmUsdcMarket = new MarketBuilder()
                 .setClient(client)
                 .setPublicKey(srmUsdcMarketPubkey)
